@@ -48,22 +48,103 @@ import SwiftUI
 import PlaygroundSupport
 //#-end-hidden-code
 
+// MARK: - Function to make Maze
+/*:
+ This function makes a random maze of given size.
+
+ The random maze may not have a solution.
+
+ - parameter rows: Number of rows in the maze.
+ - parameter columns: Number of columns in the maze.
+ - returns: A random maze of type `Matrix<Int>`.
+
+ **Notes:**
+ 1. For convenience, the maze must be surrounded by walls, so the actuall number of rows and columns in the matrix are `(rows + 2)` and `(columns + 2)`.
+ 2. The top left position (`[1, 1]`) is the entrance and the bottom right position (`[rows, columns]`) is the goal.
+
+ **Example**
+ ```
+ let randomMaze = makeMaze(of: 10, by: 10)
+ ```
+ */
+func makeMaze(of rows: Int, by columns: Int) -> Maze {
+    // Initiate an empty martix
+    var maze = Maze(rows: rows + 2, columns: columns + 2,
+                    defaultValue: 0)
+    // Generate random entries of the matrix
+    for i in 0 ... rows + 1 {
+        for j in 0 ... columns + 1 {
+            if i == 0 || j == 0 || i == rows + 1 || j == columns + 1 {
+                maze[i, j] = 1
+            } else if (i != 1 || j != 1) && (i != rows || j != columns) {
+                maze[i, j] = Int.random(in: 0 ... 1)
+            }
+        }
+    }
+    return maze
+}
+
+/*:
+ This function makes a maze from a given string.
+
+ Here is an example of input maze:
+ ```
+ ++++++++
+ + ++ +++
+ ++   + +
+ + ++ +++
+ ++ ++  +
+ ++++++++
+ ```
+ - parameter mazeString: The `String` representation of a maze.
+ - returns: The `Matrix<Int>` representation of the given maze.
+
+ **Notes:**
+ 1. The input string must have lines with equal length, and it must consist of "`+`" representing walls and "` `" representing pathways.
+ 2. The input maze must be surrounded by walls. The top left position is the entrance and the bottom right position is the goal, thus they must be linked with empty pathways.
+ 3. Handle return type because it is optional.
+
+ **Example**
+ ```
+ if let maze = makeMaze(from: demoMaze) {
+     ** Do something here **
+ }
+ ```
+ */
+func makeMaze(from mazeString: String) -> Maze? {
+    // Get number of rows and columns from the input string
+    let rows: [Substring] = mazeString.split(separator: "\n")
+    let rowCount: Int = rows.count
+    let columnCount: Int = rows[1].count
+    // Construct the grid array from the input string
+    var mazeGrid = [Int]()
+    for character in mazeString {
+        if character == "+" {
+            mazeGrid.append(1)
+        } else if character == " " {
+            mazeGrid.append(0)
+        }
+    }
+    // Check if the structure is correct, and return the maze
+    guard mazeGrid.count == rowCount * columnCount else { return nil }
+    return Maze(rows: rowCount, columns: columnCount, grid: mazeGrid)
+}
+
+
 // MARK: - Definition of Maze
 // This is the Model
 struct Maze: Matrix {
     typealias Element = Int
     let rows: Int
     let columns: Int
+    var grid: [Int]
     
-    // Maze represented using an array
-    private(set) var grid: [Int]
     // Initiate the marker matrix
-    private(set) var mark = PathMark(rows: rows, columns: columns,
-                                     defaultValue: .new)
+    private(set) var mark: PathMark
     // Initiate an empty stack to store the path visited
     private(set) var stack = Stack<(Coordinate, Direction)>()
     // Initiate the current coordinate to the starting position
-    private(set) var coord = start
+    private(set) var coord: Coordinate?
     // Number of steps to solve the maze
     private(set) var steps: Int = 0
     // A marker indicating whether the maze is solved
@@ -81,6 +162,8 @@ struct Maze: Matrix {
         self.columns = columns
         self.rows = rows
         self.grid = grid
+        self.mark = PathMark(rows: rows, columns: columns,
+                             defaultValue: .new)
     }
 }
 
@@ -205,21 +288,22 @@ extension Maze {
     }
     
     /// Main function to solve the Maze
-    public func findPath() {
-        self.markVisited(at: start, &mark)
+    public mutating func findPath() {
+        self.coord = start
+        self.markVisited(at: coord!, &mark)
         repeat {
             // Check whether the Maze is solved
-            if coord == goal {
+            if coord! == goal {
                 // print("Success!")
                 mazeIsSolved = true
                 break
             } else { // Solve the Maze here
                 var moved = false
                 for dir in Direction.allCases {
-                    if isMoveValid(dir, coord, mark) {
-                        stack.add((coord, dir))
-                        coord.move(to: dir)
-                        markVisited(at: coord, &mark)
+                    if isMoveValid(dir, coord!, mark) {
+                        stack.add((coord!, dir))
+                        coord!.move(to: dir)
+                        markVisited(at: coord!, &mark)
                         steps += 1
                         // print("Coordinate (\(coord.row), \(coord.col)) is visited.")
                         moved = true
@@ -238,7 +322,7 @@ extension Maze {
         // Print the path to console if the maze is solved
         if mazeIsSolved {
             print("Path:")
-            for (coord, _) in stack.array {
+            for (coord, _) in stack.rawData {
                 print("(\(coord.row), \(coord.col))")
             }
         }
@@ -246,6 +330,7 @@ extension Maze {
     
     //#-end-editable-code
 }
+
 
 /*:
  Here defines the **View Model**.
@@ -279,6 +364,25 @@ class MazeViewModel: ObservableObject {
             model = createRandomMaze()
         }
     }
+    
+    // MARK: Access to the model
+    // because it's a private var
+    var grid: [Int] { model.grid }
+    var mark: Maze.PathMark { model.mark }
+    var stack: Stack<(Maze.Coordinate, Maze.Direction)> { model.stack }
+    var coord: Maze.Coordinate { model.coord ?? model.start }
+    var steps: Int { model.steps }
+    var mazeIsSolved: Bool { model.mazeIsSolved }
+    
+    // MARK: Intents
+    
+    func solveMaze() {
+        model.findPath()
+    }
+    
+    func resetMaze() {
+        model = MazeViewModel.createRandomMaze()
+    }
 }
 
 extension MazeViewModel {
@@ -295,11 +399,44 @@ extension MazeViewModel {
  
  In the MVVM Design Pattern, the **view** is defined to be the object to handle the graphical user interface.
  */
+// MARK: - View
 struct MazeProblemView: View {
-    @ObservedObject var viewModel: MazeViewModel
+    @StateObject var viewModel: MazeViewModel
     
     var body: some View {
-        Text("Maze")
+        VStack {
+            GeometryReader { geometry in
+                HStack {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.75)) {
+                            viewModel.solveMaze()
+                        }
+                    } label: {
+                        Text("Solve Maze")
+                            .font(Font.system(size: geometry.size.width*0.3, weight: .heavy, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+                    .background(Color.accentColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.75)) {
+                            viewModel.resetMaze()
+                        }
+                    } label: {
+                        Text("Reset Maze")
+                            .font(Font.system(size: geometry.size.width*0.3, weight: .heavy, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .padding()
+                    .background(Color.accentColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+            }
+            
+            Text("\(viewModel.steps)")
+        }
     }
 }
 
@@ -307,6 +444,6 @@ struct MazeProblemView: View {
 //#-editable-code
 let mazeProblemView = MazeProblemView(viewModel: MazeViewModel(.demo))
 //#-end-editable-code
-PlaygroundPage.current.liveView = mazeProblemView
+PlaygroundPage.current.setLiveView(mazeProblemView)
 //#-hidden-code
 //#-end-hidden-code

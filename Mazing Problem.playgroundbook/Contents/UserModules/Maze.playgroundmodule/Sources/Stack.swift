@@ -21,8 +21,12 @@ public struct Stack<T> {
         if array.isEmpty {
             return nil
         } else {
-            return array[endIndex - 1]
+            return array[array.endIndex - 1]
         }
+    }
+    
+    public var rawData: [T] {
+        array
     }
 }
 
