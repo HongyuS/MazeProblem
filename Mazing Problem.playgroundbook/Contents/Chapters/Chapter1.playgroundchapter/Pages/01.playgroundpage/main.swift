@@ -142,7 +142,7 @@ struct Maze: Matrix {
     // Initiate the marker matrix
     private(set) var mark: PathMark
     // Initiate an empty stack to store the path visited
-    private(set) var stack = Stack<(Coordinate, Direction)>()
+    private(set) var stack = Stack<Coordinate>()
     // Initiate the current coordinate to the starting position
     private(set) var coord: Coordinate?
     // Number of steps to solve the maze
@@ -156,14 +156,16 @@ struct Maze: Matrix {
         self.columns = columns
         self.rows = rows
         grid = Array(repeating: defaultValue, count: rows * columns)
+        mark = PathMark(rows: rows, columns: columns,
+                        defaultValue: .new)
     }
     /// Initialize from an existing grid
     public init(rows: Int, columns: Int, grid: [Element]) {
         self.columns = columns
         self.rows = rows
         self.grid = grid
-        self.mark = PathMark(rows: rows, columns: columns,
-                             defaultValue: .new)
+        mark = PathMark(rows: rows, columns: columns,
+                        defaultValue: .new)
     }
 }
 
@@ -294,25 +296,24 @@ extension Maze {
         repeat {
             // Check whether the Maze is solved
             if coord! == goal {
-                // print("Success!")
                 mazeIsSolved = true
+                stack.add(coord!)
                 break
             } else { // Solve the Maze here
                 var moved = false
                 for dir in Direction.allCases {
                     if isMoveValid(dir, coord!, mark) {
-                        stack.add((coord!, dir))
+                        stack.add(coord!)
                         coord!.move(to: dir)
                         markVisited(at: coord!, &mark)
                         steps += 1
-                        // print("Coordinate (\(coord.row), \(coord.col)) is visited.")
-                        moved = true
                         break
                     }
                 }
                 if !moved {
-                    if let (coord, dir) = stack.pop() {
+                    if let coord = stack.pop() {
                         self.coord = coord
+                        steps += 1
                     } else {
                         print("There is no path to Exit in the maze!")
                     }
@@ -322,12 +323,11 @@ extension Maze {
         // Print the path to console if the maze is solved
         if mazeIsSolved {
             print("Path:")
-            for (coord, _) in stack.rawData {
+            for coord in stack.rawData {
                 print("(\(coord.row), \(coord.col))")
             }
         }
     }
-    
     //#-end-editable-code
 }
 
@@ -352,16 +352,16 @@ class MazeViewModel: ObservableObject {
         if let maze = makeMaze(from: demoMaze) {
             return maze
         } else {
-            return createRandomMaze(of: 10, by: 10)
+            return createRandomMaze()
         }
     }
     
     init(_ mazeType: MazeType = .random) {
         switch mazeType {
         case .demo:
-            model = createDemoMaze()
+            model = MazeViewModel.createDemoMaze()
         case .random:
-            model = createRandomMaze()
+            model = MazeViewModel.createRandomMaze()
         }
     }
     
@@ -369,7 +369,7 @@ class MazeViewModel: ObservableObject {
     // because it's a private var
     var grid: [Int] { model.grid }
     var mark: Maze.PathMark { model.mark }
-    var stack: Stack<(Maze.Coordinate, Maze.Direction)> { model.stack }
+    var stack: Stack<Maze.Coordinate> { model.stack }
     var coord: Maze.Coordinate { model.coord ?? model.start }
     var steps: Int { model.steps }
     var mazeIsSolved: Bool { model.mazeIsSolved }
@@ -401,24 +401,27 @@ extension MazeViewModel {
  */
 // MARK: - View
 struct MazeProblemView: View {
-    @StateObject var viewModel: MazeViewModel
+    @StateObject var viewModel = MazeViewModel(.demo)
     
     var body: some View {
         VStack {
             GeometryReader { geometry in
                 HStack {
+                    Spacer()
+                    
                     Button {
                         withAnimation(.easeInOut(duration: 0.75)) {
                             viewModel.solveMaze()
                         }
                     } label: {
                         Text("Solve Maze")
-                            .font(Font.system(size: geometry.size.width*0.3, weight: .heavy, design: .monospaced))
                             .foregroundColor(.white)
                     }
                     .padding()
                     .background(Color.accentColor)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    
+                    Spacer()
                     
                     Button {
                         withAnimation(.easeInOut(duration: 0.75)) {
@@ -426,12 +429,13 @@ struct MazeProblemView: View {
                         }
                     } label: {
                         Text("Reset Maze")
-                            .font(Font.system(size: geometry.size.width*0.3, weight: .heavy, design: .monospaced))
                             .foregroundColor(.white)
                     }
                     .padding()
                     .background(Color.accentColor)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    
+                    Spacer()
                 }
             }
             
@@ -441,9 +445,6 @@ struct MazeProblemView: View {
 }
 
 /// Create a view to display the Mazing Problem
-//#-editable-code
-let mazeProblemView = MazeProblemView(viewModel: MazeViewModel(.demo))
-//#-end-editable-code
-PlaygroundPage.current.setLiveView(mazeProblemView)
+PlaygroundPage.current.setLiveView(MazeProblemView())
 //#-hidden-code
 //#-end-hidden-code
