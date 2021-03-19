@@ -1,20 +1,28 @@
 // This implements a Stack type based on Array
 public struct Stack<T> {
-    private var stack = [T]()
+    private(set) var array = [T]()
     
     // Provide a public initializer to initialize an empty stack
     public init() {}
     
     public mutating func add(_ element: T) {
-        stack.append(element)
+        array.append(element)
     }
     
     public mutating func pop() -> T? {
-        stack.popLast()
+        array.popLast()
     }
     
     public var isEmpty: Bool {
-        stack.isEmpty
+        array.isEmpty
+    }
+    
+    public var top: T? {
+        if array.isEmpty {
+            return nil
+        } else {
+            return array[endIndex - 1]
+        }
     }
 }
 

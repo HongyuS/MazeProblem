@@ -26,7 +26,7 @@ extension Matrix {
     }
 }
 
-// Make the `Matrix` type printable.
+// MARK: CustomStringConvertible
 extension Matrix {
     public var description: String {
         var text = ""
@@ -34,7 +34,7 @@ extension Matrix {
             if i % columns == columns - 1 && i != grid.count - 1 {
                 text += "\(grid[i])\n"
             } else {
-                text += "\(grid[i]) "
+                text += "\(grid[i])\t"
             }
         }
         return text
