@@ -8,6 +8,8 @@
 	<string>VisibleByDefault</string>
 	<key>Name</key>
 	<string>Mazing Problem</string>
+	<key>PlaygroundLoggingMode</key>
+	<string>Off</string>
 	<key>UserModuleSourceFilesToOpen</key>
 	<array>
 		<string>UserModules/Maze.playgroundmodule/Sources/Matrix.swift</string>
