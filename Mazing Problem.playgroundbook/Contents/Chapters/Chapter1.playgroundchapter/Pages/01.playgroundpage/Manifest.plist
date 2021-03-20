@@ -3,10 +3,15 @@
 <plist version="1.0">
 <dict>
 	<key>LiveViewEdgeToEdge</key>
-	<false/>
+	<true/>
 	<key>LiveViewMode</key>
-	<string>HiddenByDefault</string>
+	<string>VisibleByDefault</string>
 	<key>Name</key>
 	<string>Mazing Problem</string>
+	<key>UserModuleSourceFilesToOpen</key>
+	<array>
+		<string>UserModules/Maze.playgroundmodule/Sources/Matrix.swift</string>
+		<string>UserModules/Maze.playgroundmodule/Sources/Stack.swift</string>
+	</array>
 </dict>
 </plist>

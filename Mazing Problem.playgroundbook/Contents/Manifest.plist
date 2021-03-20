@@ -9,9 +9,9 @@
 	<key>ContentIdentifier</key>
 	<string>cn.edu.cuhk.honyu-shi.mazing-problem</string>
 	<key>ContentVersion</key>
-	<string>0.2</string>
+	<string>1.0</string>
 	<key>DeploymentTarget</key>
-	<string>ios-current</string>
+	<string>ios14.0</string>
 	<key>DevelopmentRegion</key>
 	<string>en</string>
 	<key>HasMeaningfulResetPoint</key>
