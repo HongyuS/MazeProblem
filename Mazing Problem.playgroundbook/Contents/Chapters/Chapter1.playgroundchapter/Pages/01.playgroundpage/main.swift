@@ -26,6 +26,9 @@
  
  Perss "Solve Maze" button to solve the maze. If there exists a solution, the label in the botton-right corner will change to "Solved!"; otherwise, it would remain "No Path Found".
  You can also press "Reset Maze" to generate a new random maze (may not have a solution).
+ 
+ **GitHub Page**:
+ https://github.com/HongyuS/MazeProblem
  */
 /// A static demo Maze for testing
 //#-editable-code
@@ -122,7 +125,7 @@ func makeMaze(of rows: Int, by columns: Int) -> Maze {
  **Example**
  ```
  if let maze = makeMaze(from: demoMaze) {
-     /*< Do something here >*/
+     // Do something here
  }
  ```
  */
@@ -176,8 +179,10 @@ struct Maze: Matrix {
     private(set) var coord: Coordinate?
     /// Number of steps to solve the maze
     private(set) var steps: Int = 0
-    /// A marker indicating whether the maze is solved
+    /// A flag indicating whether the maze is solved
     private(set) var mazeIsSolved = false
+    /// A flag indicating whether the maze has solution
+    private(set) var mazeHasSolution = false
     
     // MARK: Initializers
     /// Initialize a grid filled with default value
@@ -326,6 +331,7 @@ extension Maze {
             // Check whether the Maze is solved
             if coord! == goal {
                 mazeIsSolved = true
+                mazeHasSolution = true
                 stack.add(coord!)
                 break
             } else { // Solve the Maze here
@@ -344,14 +350,12 @@ extension Maze {
                     if let coord = stack.pop() {
                         self.coord = coord
                         steps += 1
-                    } else {
-                        print("There is no path to Exit in the maze!")
                     }
                 }
             }
         } while !stack.isEmpty
         // Print the path to console if the maze is solved
-        if mazeIsSolved {
+        if mazeHasSolution {
             self.path = PathMark(rows: rows, columns: columns,
                                  defaultValue: .new)
             print("Path:")
@@ -359,6 +363,9 @@ extension Maze {
                 markVisited(at: coord, &path!)
                 print("(\(coord.row), \(coord.col))")
             }
+        } else {
+            mazeIsSolved = true
+            print("There is no path to Exit in the maze!")
         }
     }
     //#-end-editable-code
@@ -378,8 +385,8 @@ extension Maze {
  */
 // MARK: - ViewModel
 class MazeViewModel: ObservableObject {
-    // Hidden implementations:
-    // Properties and methods are defined here
+    // Inplementation is hidden here, but if you
+    // are interested, you may check it on GitHub.
     //#-hidden-code
     @Published private var model: Maze
     
@@ -416,6 +423,7 @@ class MazeViewModel: ObservableObject {
     var coord: Maze.Coordinate { model.coord ?? model.start }
     var steps: Int { model.steps }
     var mazeIsSolved: Bool { model.mazeIsSolved }
+    var mazeHasSolution: Bool { model.mazeHasSolution }
     
     // MARK: Intents
     
@@ -449,7 +457,8 @@ extension MazeViewModel {
  */
 // MARK: - View
 struct MazeProblemView: View {
-    // Hidden implementations
+    // Inplementation is hidden here, but if you
+    // are interested, you may check it on GitHub.
     //#-hidden-code
     @StateObject var viewModel = MazeViewModel(.demo)
     
@@ -469,7 +478,7 @@ struct MazeProblemView: View {
                 GeometryReader { geometry in
                     Group {
                         mazeLayer(size: geometry.size, type: .visited)
-                        if viewModel.mazeIsSolved {
+                        if viewModel.mazeHasSolution {
                             mazeLayer(size: geometry.size, type: .path)
                         }
                         mazeLayer(size: geometry.size, type: .wall)
@@ -492,17 +501,7 @@ struct MazeProblemView: View {
                 Spacer()
                 
                 if viewModel.mazeIsSolved {
-                    Text("Solved!")
-                        .foregroundColor(.white)
-                        .padding(12)
-                        .background(Color.green)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                } else {
-                    Text("No Path Found")
-                        .foregroundColor(.white)
-                        .padding(12)
-                        .background(Color.orange)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    viewModel.mazeHasSolution ? cornerFlag("Solved!", color: .green) : cornerFlag("No Path Found", color: .orange)
                 }
             }
             .font(.headline)
@@ -565,6 +564,13 @@ extension MazeProblemView {
         }.animation(.easeInOut(duration: 0.01))
     }
     
+    @ViewBuilder func cornerFlag(_ flag: String, color: Color) -> some View {
+        Text(flag)
+            .foregroundColor(.white)
+            .padding(12)
+            .background(color)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
 }
 
 extension MazeProblemView {
