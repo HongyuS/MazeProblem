@@ -392,11 +392,13 @@ class MazeViewModel: ObservableObject {
     
     private static func createRandomMaze() -> Maze {
         let dim = Int.random(in: 12 ... 20)
+        print("-- New random maze of size \(dim) x \(dim) is created --")
         return makeMaze(of: dim, by: dim)
     }
     
     private static func createDemoMaze() -> Maze {
         if let maze = makeMaze(from: demoMaze) {
+            print("-- New demo maze is created --")
             return maze
         } else {
             return createRandomMaze()
